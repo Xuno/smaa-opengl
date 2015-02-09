@@ -8,11 +8,14 @@
 #undef far
 #endif
 
+//#define lexxai
+
 #define GLEW_STATIC
 
 #include "GL/glew.h" //the mighty GLEW :)
 #include "SFML/Window.hpp"
 #include "SFML/Audio.hpp"
+#include "SFML/Graphics.hpp"
 
 #include "smaa_glsl.h"
 
@@ -47,6 +50,7 @@ GLuint edge_tex;
 GLuint blend_tex;
 GLuint area_tex;
 GLuint search_tex;
+GLuint bg_tex;
 
 GLuint albedo_fbo;
 GLuint edge_fbo;
@@ -105,8 +109,10 @@ int main( int argc, char* args[] )
   if( !GLEW_VERSION_4_1 )
   {
     std::cerr << "Error: OpenGL 4.1 is required\n";
-    the_window.close();
+#ifndef lexxai 
+	the_window.close();
     exit( 1 );
+#endif
   }
 
   get_app_path();
@@ -193,6 +199,38 @@ int main( int argc, char* args[] )
 
   get_opengl_error();
 
+
+  //init bg texture  bg_tex
+
+  
+  sf::Image img_data;
+
+  if (!img_data.loadFromFile(app_path + "000002.bmp"))
+  {
+	  std::cerr << "Couldn't open 000002.bmp.\n";
+	  the_window.close();
+	  exit( 1 );
+  }
+
+  //img_data.flipHorizontally();
+  img_data.flipVertically();
+
+  GLuint bg_tex;
+  glGenTextures(1, &bg_tex);
+  glBindTexture(GL_TEXTURE_2D, bg_tex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexImage2D(
+	  GL_TEXTURE_2D, 0, GL_RGBA, 
+	  img_data.getSize().x, img_data.getSize().y,
+	  0, 
+	  GL_RGBA, GL_UNSIGNED_BYTE, img_data.getPixelsPtr()
+  );
+
+
+
   /*
    * Initialize FBOs
    */
@@ -225,6 +263,8 @@ int main( int argc, char* args[] )
   glBindTexture( GL_TEXTURE_2D, 0 );
 
   get_opengl_error();
+
+#ifndef lexxai
 
   /*
    * Set up shaders
@@ -281,6 +321,7 @@ int main( int argc, char* args[] )
 
   get_opengl_error();
 
+#endif
 
   /*
    * Set up matrices
@@ -304,6 +345,8 @@ int main( int argc, char* args[] )
    * Generate input
    */
 
+  float img_aspect = float(img_data.getSize().x) / float(img_data.getSize().y);
+
   glBindFramebuffer( GL_FRAMEBUFFER, albedo_fbo );
 
   glClearColor( 0, 0, 0, 0 );
@@ -321,15 +364,48 @@ int main( int argc, char* args[] )
 
   glPushMatrix();
   glTranslatef( 0.5f, 0.5f, 0.0f );
+
+  //glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, bg_tex);
+
   glBegin( GL_TRIANGLES );
   glColor3f( 1, 1, 1 );
-  glVertex2f( -0.25f, -0.25f );
-  glVertex2f( 0, 0.25f );
-  glVertex2f( 0.25f, -0.25f );
+  
+  // first triangle, bottom left half
+
+  float pixh = 0.5 / img_aspect * (float(SCREEN_WIDTH)/float(SCREEN_HEIGHT));
+
+  std::cout << "img_aspect:" << img_aspect << "\n";
+  std::cout << "pixh:" << pixh << "\n";
+
+  glTexCoord2f(0, 0); glVertex2f(-0.5f, -pixh);
+  glTexCoord2f(1, 0); glVertex2f(0.5f, -pixh);
+  glTexCoord2f(0, 1); glVertex2f(-0.5f, pixh);
+
+  // second triangle, top right half
+  glTexCoord2f(1, 0); glVertex2f(0.5f, -pixh);
+  glTexCoord2f(0, 1); glVertex2f(-0.5f, pixh);
+  glTexCoord2f(1, 1); glVertex2f(0.5f, pixh);
+
+ // glVertex2f( -0.25f, -0.25f );
+  //glVertex2f( 0, 0.25f );
+  //glVertex2f( 0.25f, -0.25f );
+
+
   glEnd();
   glPopMatrix();
 
-  glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+  
+
+ 
+
+ glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
+  
+
+
 
   get_opengl_error();
 
@@ -537,7 +613,7 @@ void get_app_path()
 #ifdef _WIN32
   app_path = app_path.substr( 0, app_path.rfind( "\\" ) + 1 );
   //when the exe is located in {source}/build/Debug/smaa.exe and we need the {source}
-  app_path += "../../";
+  //app_path += "../../";
 #endif
 
 #ifdef __unix__

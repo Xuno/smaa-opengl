@@ -30,4 +30,15 @@
   <ItemGroup>
     <None Include="smaa-opengl.includes" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="000001.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="000002.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="000002.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
 </Project>
