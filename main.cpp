@@ -8,6 +8,8 @@
 #undef far
 #endif
 
+#define GLEW_STATIC
+
 #include "GL/glew.h" //the mighty GLEW :)
 #include "SFML/Window.hpp"
 #include "SFML/Audio.hpp"
@@ -17,6 +19,7 @@
 #ifdef __unix__
 #include "unistd.h"
 #endif
+
 
 /*
  * Global variables
